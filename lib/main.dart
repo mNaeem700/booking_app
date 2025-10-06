@@ -1,3 +1,7 @@
+import 'package:booking_app/screens/booking_screen.dart';
+import 'package:booking_app/screens/booking_success_screen.dart';
+import 'package:booking_app/screens/homeScreen.dart';
+import 'package:booking_app/screens/my_bookings_screen.dart';
 import 'package:booking_app/screens/signin.dart';
 import 'package:booking_app/screens/signup.dart';
 import 'package:booking_app/theme/app_colors.dart';
@@ -41,7 +45,7 @@ class MyApp extends StatelessWidget {
           secondary: AppColors.secondary,
         ),
       ),
-      home: SigninScreen(),
+      home: const SignupScreen(),
     );
   }
 }
