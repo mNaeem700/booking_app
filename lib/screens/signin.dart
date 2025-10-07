@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'package:booking_app/screens/homeScreen.dart';
 import 'package:booking_app/screens/signup.dart';
-import 'package:booking_app/screens/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lottie/lottie.dart';
+import 'package:booking_app/screens/custom_text_field.dart';
 import '../../../theme/app_colors.dart';
 
 class SigninScreen extends StatefulWidget {
@@ -18,20 +16,17 @@ class _SigninScreenState extends State<SigninScreen>
     with TickerProviderStateMixin {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
   bool isLoading = false;
-  bool showConfetti = false;
 
-  late final AnimationController _fadeController;
-  late final Animation<double> _fadeAnimation;
-  late final AnimationController _glowController;
-  late final Animation<double> _glowAnimation;
+  late AnimationController _fadeController;
+  late AnimationController _buttonGlowController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Initialize safely before any rebuilds
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -41,73 +36,48 @@ class _SigninScreenState extends State<SigninScreen>
       curve: Curves.easeInOut,
     );
 
-    _glowController = AnimationController(
+    _buttonGlowController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
     _glowAnimation = Tween<double>(begin: 0.0, end: 12.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _buttonGlowController, curve: Curves.easeInOut),
     );
 
-    // Start fade animation
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fadeController.forward();
-    });
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
-    _glowController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
+    _buttonGlowController.dispose();
     super.dispose();
   }
 
   Future<void> _signin() async {
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
-      return;
-    }
-
     setState(() => isLoading = true);
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
-
-      setState(() {
-        isLoading = false;
-        showConfetti = true;
-      });
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Login successful! 🎉")));
+      ).showSnackBar(const SnackBar(content: Text("Sign in Successful!")));
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => showConfetti = false);
-
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 700),
-            pageBuilder: (_, anim, __) =>
-                FadeTransition(opacity: anim, child: const HomeScreen()),
-          ),
-        );
-      });
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 700),
+          pageBuilder: (_, anim, __) =>
+              FadeTransition(opacity: anim, child: const HomeScreen()),
+        ),
+      );
     } on FirebaseAuthException catch (e) {
-      setState(() => isLoading = false);
-      String message = "Login failed";
+      String message = "Incorrect email or password";
       if (e.code == 'user-not-found') {
         message = "No user found with this email";
       } else if (e.code == 'wrong-password') {
@@ -117,11 +87,12 @@ class _SigninScreenState extends State<SigninScreen>
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Unexpected error")));
     }
+
+    setState(() => isLoading = false);
   }
 
   @override
@@ -129,7 +100,7 @@ class _SigninScreenState extends State<SigninScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // 🌈 Animated gradient background
+          // Animated background gradient
           AnimatedContainer(
             duration: const Duration(seconds: 3),
             decoration: const BoxDecoration(
@@ -145,17 +116,6 @@ class _SigninScreenState extends State<SigninScreen>
             ),
           ),
 
-          // 🎊 Confetti effect
-          if (showConfetti)
-            Center(
-              child: Lottie.asset(
-                'assets/animations/confetti.json',
-                repeat: false,
-                width: 300,
-                height: 300,
-              ),
-            ),
-
           FadeTransition(
             opacity: _fadeAnimation,
             child: Center(
@@ -165,7 +125,7 @@ class _SigninScreenState extends State<SigninScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Hero(
-                      tag: "authTitle",
+                      tag: "signinTitle",
                       child: Text(
                         "Welcome Back",
                         textAlign: TextAlign.center,
@@ -178,26 +138,20 @@ class _SigninScreenState extends State<SigninScreen>
                     ),
                     const SizedBox(height: 40),
 
-                    _animatedField(
-                      CustomTextField(
-                        controller: emailController,
-                        hintText: "Email",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      0,
+                    CustomTextField(
+                      controller: emailController,
+                      hintText: "Email",
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
-                    _animatedField(
-                      CustomTextField(
-                        controller: passwordController,
-                        hintText: "Password",
-                        isPassword: true,
-                      ),
-                      1,
-                    ),
-                    const SizedBox(height: 24),
 
-                    // ✨ Glowing Sign In button
+                    CustomTextField(
+                      controller: passwordController,
+                      hintText: "Password",
+                      isPassword: true,
+                    ),
+                    const SizedBox(height: 30),
+
                     AnimatedBuilder(
                       animation: _glowAnimation,
                       builder: (context, child) {
@@ -235,17 +189,16 @@ class _SigninScreenState extends State<SigninScreen>
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     Hero(
-                      tag: "signinButton",
+                      tag: "switchToSignup",
                       child: TextButton(
                         onPressed: () {
                           Navigator.push(
@@ -273,25 +226,6 @@ class _SigninScreenState extends State<SigninScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _animatedField(Widget child, int index) {
-    return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: _fadeController,
-        curve: Interval(0.1 * index, 1, curve: Curves.easeIn),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-            .animate(
-              CurvedAnimation(
-                parent: _fadeController,
-                curve: Interval(0.1 * index, 1, curve: Curves.easeOut),
-              ),
-            ),
-        child: child,
       ),
     );
   }

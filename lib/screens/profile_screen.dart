@@ -1,6 +1,15 @@
+import 'package:booking_app/screens/Help_Center_Screen.dart'
+    hide HelpCenterScreen;
+import 'package:booking_app/screens/Wallet_Screen.dart';
+import 'package:booking_app/screens/animated_background.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:booking_app/theme/app_colors.dart';
+
+// Import other screens for navigation
+import 'package:booking_app/screens/edit_profile_screen.dart';
+import 'package:booking_app/screens/change_password_screen.dart';
+import 'package:booking_app/screens/help_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -54,7 +63,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       duration: const Duration(milliseconds: 1000),
     );
 
-    // Initialize safely
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _glowController = AnimationController(
         vsync: this,
@@ -88,256 +96,304 @@ class _ProfileScreenState extends State<ProfileScreen>
     final avatarScale = (1 - (_scrollOffset / 200)).clamp(0.7, 1.0);
     final avatarOffset = (_scrollOffset / 4).clamp(0.0, 20.0);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (scrollInfo) {
-          if (scrollInfo.metrics.axis == Axis.vertical) {
-            setState(() => _scrollOffset = scrollInfo.metrics.pixels);
-          }
-          return true;
-        },
-        child: RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: _refreshProfile,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            slivers: [
-              // 🔹 HEADER
-              SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 800),
-                          height: 230,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primary.withValues(alpha: 0.95),
-                                AppColors.primary.withValues(alpha: 0.7),
-                                AppColors.primary.withValues(alpha: 0.9),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(30),
-                              bottomRight: Radius.circular(30),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                                blurRadius: 16 + glowValue,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 6),
+    return AnimatedBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: NotificationListener<ScrollNotification>(
+          onNotification: (scrollInfo) {
+            if (scrollInfo.metrics.axis == Axis.vertical) {
+              setState(() => _scrollOffset = scrollInfo.metrics.pixels);
+            }
+            return true;
+          },
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: _refreshProfile,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                // 🔹 HEADER
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 800),
+                            height: 230,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withAlpha(240),
+                                  AppColors.primary.withAlpha(180),
+                                  AppColors.primary.withAlpha(220),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          top: 60 - avatarOffset,
-                          child: Transform.scale(
-                            scale: avatarScale,
-                            child: Hero(
-                              tag: 'profileAvatar',
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                      blurRadius: 12 + glowValue,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(30),
+                                bottomRight: Radius.circular(30),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withAlpha(90),
+                                  blurRadius: 16 + glowValue,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 6),
                                 ),
-                                child: const CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: AssetImage(
-                                    'assets/images/user.jpg',
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: 60 - avatarOffset,
+                            child: Transform.scale(
+                              scale: avatarScale,
+                              child: Hero(
+                                tag: 'profileAvatar',
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withAlpha(
+                                          100 + (glowValue * 10).toInt(),
+                                        ),
+                                        blurRadius: 12 + glowValue,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: AssetImage(
+                                      'assets/images/user.jpg',
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: 35,
-                          child: Column(
-                            children: [
-                              const Text(
-                                "Naeem Ahmed",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  color: Colors.white,
+                          Positioned(
+                            bottom: 25,
+                            child: Column(
+                              children: [
+                                const Text(
+                                  "Naeem Ahmed",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                "naeem@example.com",
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 14,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 2 + glowValue / 3,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(height: 3),
+                                Text(
+                                  "naeem@example.com",
+                                  style: TextStyle(
+                                    color: Colors.white.withAlpha(200),
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // 🔹 PROFILE OPTIONS
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 24,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final option = _profileOptions[index];
-                    final isLogout = option['title'] == 'Logout';
+                // 🔹 PROFILE OPTIONS
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final option = _profileOptions[index];
+                      final isLogout = option['title'] == 'Logout';
 
-                    return AnimatedBuilder(
-                      animation: _listAnimationController,
-                      builder: (context, child) {
-                        final delay = index * 0.1;
-                        final animValue =
-                            (_listAnimationController.value - delay).clamp(
-                              0.0,
-                              1.0,
-                            );
-                        final tilt = (1 - animValue) * 0.1;
+                      return AnimatedBuilder(
+                        animation: _listAnimationController,
+                        builder: (context, child) {
+                          final delay = index * 0.1;
+                          final animValue =
+                              (_listAnimationController.value - delay).clamp(
+                                0.0,
+                                1.0,
+                              );
+                          final tilt = (1 - animValue) * 0.1;
 
-                        return Opacity(
-                          opacity: animValue,
-                          child: Transform(
-                            transform: Matrix4.identity()
-                              ..translate(0.0, 30 * (1 - animValue))
-                              ..rotateZ(tilt),
-                            alignment: Alignment.center,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _onTapFeedback(option['title']),
-                        splashColor: AppColors.primary.withValues(alpha: 0.1),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOut,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 18,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isLogout
-                                ? Colors.red.withValues(alpha: 0.05)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: isLogout
-                                ? Border.all(color: Colors.red, width: 1)
-                                : null,
-                            boxShadow: [
-                              if (!isLogout)
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeOutBack,
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: isLogout
-                                      ? Colors.red.withValues(alpha: 0.1)
-                                      : AppColors.primary.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    if (isLogout)
-                                      BoxShadow(
-                                        color: Colors.red.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                        blurRadius: 6,
-                                      ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  option['icon'],
-                                  color: isLogout
-                                      ? Colors.red
-                                      : AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  option['title'],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isLogout ? Colors.red : Colors.black,
+                          return Opacity(
+                            opacity: animValue,
+                            child: Transform(
+                              transform: Matrix4.identity()
+                                ..translate(0.0, 30 * (1 - animValue))
+                                ..rotateZ(tilt),
+                              alignment: Alignment.center,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => _handleTap(option['title']),
+                          splashColor: AppColors.primary.withAlpha(30),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOut,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 18,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isLogout
+                                  ? Colors.red.withAlpha(15)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: isLogout
+                                  ? Border.all(color: Colors.red, width: 2)
+                                  : null,
+                              boxShadow: [
+                                if (!isLogout)
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(20),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isLogout
+                                        ? Colors.red.withAlpha(30)
+                                        : AppColors.primary.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    option['icon'],
+                                    color: isLogout
+                                        ? Colors.red
+                                        : AppColors.primary,
                                   ),
                                 ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: isLogout ? Colors.red : Colors.grey,
-                                size: 18,
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    option['title'],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: isLogout
+                                          ? Colors.red
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: isLogout ? Colors.red : Colors.grey,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }, childCount: _profileOptions.length),
+                      );
+                    }, childCount: _profileOptions.length),
+                  ),
                 ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 50)),
-            ],
+                const SliverToBoxAdapter(child: SizedBox(height: 50)),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _onTapFeedback(String title) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("$title clicked!"),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(milliseconds: 800),
+  // 🔹 Handles navigation and logout dialog
+  void _handleTap(String title) {
+    switch (title) {
+      case 'Edit Profile':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+        );
+        break;
+      case 'Change Password':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+        );
+        break;
+      case 'My Wallet':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const WalletScreen()),
+        );
+        break;
+      case 'Help Center':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+        );
+        break;
+      case 'Logout':
+        _showLogoutDialog();
+        break;
+    }
+  }
+
+  // 🔹 Professional logout confirmation
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Confirm Logout"),
+        content: const Text(
+          "Are you sure you want to logout?",
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Logged out successfully!"),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 1),
+                ),
+              );
+              // TODO: Add your actual logout logic here (Firebase/Auth)
+            },
+            child: const Text("Logout"),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:booking_app/screens/animated_background.dart';
 import 'package:flutter/material.dart';
 import 'package:booking_app/theme/app_colors.dart';
 import 'salon_detail_screen.dart';
@@ -65,183 +66,185 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 3,
-        shadowColor: Colors.black26,
-        centerTitle: true,
-        title: const Text(
-          "My Favorites 💖",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 22,
-            letterSpacing: 0.5,
+    return AnimatedBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 3,
+          shadowColor: Colors.black26,
+          centerTitle: true,
+          title: const Text(
+            "My Favorites 💖",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 22,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
-      ),
-      body: favoriteSalons.isEmpty
-          ? const Center(
-              child: Text(
-                "No favorites yet!",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            )
-          : RefreshIndicator(
-              color: AppColors.primary,
-              backgroundColor: Colors.white,
-              onRefresh: _refreshFavorites,
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+        body: favoriteSalons.isEmpty
+            ? const Center(
+                child: Text(
+                  "No favorites yet!",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
-                itemCount: favoriteSalons.length,
-                itemBuilder: (context, index) {
-                  final salon = favoriteSalons[index];
-                  final animation = CurvedAnimation(
-                    parent: _listAnimationController,
-                    curve: Interval(
-                      (index / favoriteSalons.length),
-                      1.0,
-                      curve: Curves.easeOutBack,
-                    ),
-                  );
+              )
+            : RefreshIndicator(
+                color: AppColors.primary,
+                backgroundColor: Colors.white,
+                onRefresh: _refreshFavorites,
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount: favoriteSalons.length,
+                  itemBuilder: (context, index) {
+                    final salon = favoriteSalons[index];
+                    final animation = CurvedAnimation(
+                      parent: _listAnimationController,
+                      curve: Interval(
+                        (index / favoriteSalons.length),
+                        1.0,
+                        curve: Curves.easeOutBack,
+                      ),
+                    );
 
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.15),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: Dismissible(
-                        key: ValueKey(salon["name"]),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (_) => _removeFavorite(index),
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.15),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: Dismissible(
+                          key: ValueKey(salon["name"]),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (_) => _removeFavorite(index),
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.redAccent,
+                              size: 26,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.redAccent,
-                            size: 26,
-                          ),
-                        ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(16),
-                                  bottomLeft: Radius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
                                 ),
-                                child: Image.asset(
-                                  salon["image"]!,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        salon["name"]!,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.star,
-                                            color: Colors.amber,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(salon["rating"]!),
-                                          const SizedBox(width: 12),
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 18,
-                                            color: Colors.grey,
-                                          ),
-                                          Text(salon["distance"]!),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          _AnimatedBookNowButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      SalonDetailScreen(
-                                                        salonName:
-                                                            salon["name"]!,
-                                                        salonImage:
-                                                            salon["image"]!,
-                                                        salonLocation:
-                                                            salon["location"]!,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                          const SizedBox(width: 10),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.favorite,
-                                              color: Colors.redAccent,
-                                            ),
-                                            onPressed: () =>
-                                                _removeFavorite(index),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
+                                  ),
+                                  child: Image.asset(
+                                    salon["image"]!,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                              ),
-                            ],
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          salon["name"]!,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(salon["rating"]!),
+                                            const SizedBox(width: 12),
+                                            const Icon(
+                                              Icons.location_on,
+                                              size: 18,
+                                              color: Colors.grey,
+                                            ),
+                                            Text(salon["distance"]!),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            _AnimatedBookNowButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        SalonDetailScreen(
+                                                          salonName:
+                                                              salon["name"]!,
+                                                          salonImage:
+                                                              salon["image"]!,
+                                                          salonLocation:
+                                                              salon["location"]!,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(width: 10),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.favorite,
+                                                color: Colors.redAccent,
+                                              ),
+                                              onPressed: () =>
+                                                  _removeFavorite(index),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
+      ),
     );
   }
 }

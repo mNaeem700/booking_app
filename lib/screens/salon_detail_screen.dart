@@ -1,3 +1,4 @@
+import 'package:booking_app/screens/animated_background.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'booking_screen.dart'; // 👈 Ensure this exists
@@ -48,135 +49,140 @@ class _SalonDetailScreenState extends State<SalonDetailScreen>
 
     return FadeTransition(
       opacity: _fadeController!,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Column(
-          children: [
-            // 🖼️ HEADER IMAGE
-            Stack(
-              children: [
-                Hero(
-                  tag: widget.salonName,
-                  child: Image.asset(
-                    widget.salonImage,
+      child: AnimatedBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              // 🖼️ HEADER IMAGE
+              Stack(
+                children: [
+                  Hero(
+                    tag: widget.salonName,
+                    child: Image.asset(
+                      widget.salonImage,
+                      height: 280,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Container(
                     height: 280,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Container(
-                  height: 280,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.25),
-                        Colors.black.withOpacity(0.65),
-                      ],
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _circleIcon(
-                          Icons.arrow_back,
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        _circleIcon(Icons.favorite_border),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 16,
-                  right: 16,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.salonName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 18,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              widget.salonLocation,
-                              style: const TextStyle(color: Colors.white70),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.star,
-                            color: Colors.amberAccent,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            "4.8",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.25),
+                          Colors.black.withOpacity(0.65),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 🧭 TAB BAR
-            Container(
-              color: Colors.white,
-              child: AnimatedBuilder(
-                animation: _tabController,
-                builder: (context, _) {
-                  return TabBar(
-                    controller: _tabController,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: AppColors.primary,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
                     ),
-                    tabs: const [
-                      Tab(text: "Services"),
-                      Tab(text: "Reviews"),
-                      Tab(text: "About"),
-                    ],
-                  );
-                },
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _circleIcon(
+                            Icons.arrow_back,
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          _circleIcon(Icons.favorite_border),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 16,
+                    right: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.salonName,
+                          style: const TextStyle(
+                            backgroundColor: Colors.transparent,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              size: 18,
+                              color: Colors.white70,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.salonLocation,
+                                style: const TextStyle(color: Colors.white70),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amberAccent,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "4.8",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
 
-            // 🧱 TAB CONTENT
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [_servicesTab(context), _reviewsTab(), _aboutTab()],
+              // 🧭 TAB BAR
+              Container(
+                color: Colors.white,
+                child: AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) {
+                    return TabBar(
+                      controller: _tabController,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: AppColors.primary,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                      tabs: const [
+                        Tab(text: "Services"),
+                        Tab(text: "Reviews"),
+                        Tab(text: "About"),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+
+              // 🧱 TAB CONTENT
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [_servicesTab(context), _reviewsTab(), _aboutTab()],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
           secondary: AppColors.secondary,
         ),
       ),
-      home: const SignupScreen(),
+      home: HomeScreen(),
     );
   }
 }
