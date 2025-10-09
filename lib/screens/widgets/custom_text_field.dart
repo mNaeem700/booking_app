@@ -1,5 +1,5 @@
+import 'package:booking_app/screens/widgets/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../../../theme/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;

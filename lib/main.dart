@@ -1,13 +1,12 @@
-import 'package:booking_app/screens/booking_screen.dart';
-import 'package:booking_app/screens/booking_success_screen.dart';
-import 'package:booking_app/screens/homeScreen.dart';
-import 'package:booking_app/screens/my_bookings_screen.dart';
-import 'package:booking_app/screens/signin.dart';
-import 'package:booking_app/screens/signup.dart';
-import 'package:booking_app/theme/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:booking_app/screens/booking/booking_screen.dart';
+import 'package:booking_app/screens/booking/booking_success_screen.dart';
+import 'package:booking_app/screens/booking/salon_detail_screen.dart';
+import 'package:booking_app/screens/home/homeScreen.dart';
+import 'package:booking_app/screens/booking/my_bookings_screen.dart';
+import 'package:booking_app/screens/auth/signin.dart';
+import 'package:booking_app/screens/auth/signup.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
 import 'package:flutter/material.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
@@ -20,12 +19,11 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Solon Booking App',
+      title: 'Salon Booking App',
       theme: ThemeData(
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
@@ -45,7 +43,7 @@ class MyApp extends StatelessWidget {
           secondary: AppColors.secondary,
         ),
       ),
-      home: HomeScreen(),
+      home: const HomeScreen(),
     );
   }
 }

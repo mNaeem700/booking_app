@@ -1,6 +1,8 @@
-import 'package:booking_app/screens/animated_background.dart';
+import 'package:booking_app/screens/widgets/animated_background.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:booking_app/theme/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -13,13 +15,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entryController;
 
-  final List<String> notifications = [
-    "💇‍♀️ Your booking at Glam Studio is confirmed!",
-    "🎉 20% OFF this weekend at Bella Beauty Lounge!",
-    "⏰ Reminder: Your appointment is tomorrow at 4:00 PM.",
-    "⭐ New salon 'Luxury Cuts' added near you!",
-    "💅 Don’t miss the spa offer — ends today!",
-  ];
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -38,6 +35,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final String userId = _auth.currentUser!.uid;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -56,32 +55,62 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         ),
       ),
       body: AnimatedBackground(
-        child: FadeTransition(
-          opacity: _entryController,
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
-            physics: const BouncingScrollPhysics(),
-            itemCount: notifications.length,
-            itemBuilder: (context, i) {
-              final start = 0.1 * i;
-              final end = (start + 0.5).clamp(0.0, 1.0);
-              final anim = CurvedAnimation(
-                parent: _entryController,
-                curve: Interval(start, end, curve: Curves.easeOut),
-              );
+        child: StreamBuilder<QuerySnapshot>(
+          stream: _db
+              .collection('notifications')
+              .where('userId', isEqualTo: userId)
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              return FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.15),
-                    end: Offset.zero,
-                  ).animate(anim),
-                  child: _buildNotificationCard(notifications[i]),
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: FadeTransition(
+                  opacity: _entryController,
+                  child: const Text(
+                    "No notifications yet",
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
                 ),
               );
-            },
-          ),
+            }
+
+            final notifications = snapshot.data!.docs;
+
+            return FadeTransition(
+              opacity: _entryController,
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
+                physics: const BouncingScrollPhysics(),
+                itemCount: notifications.length,
+                itemBuilder: (context, i) {
+                  final start = 0.1 * i;
+                  final end = (start + 0.5).clamp(0.0, 1.0);
+                  final anim = CurvedAnimation(
+                    parent: _entryController,
+                    curve: Interval(start, end, curve: Curves.easeOut),
+                  );
+
+                  final message =
+                      notifications[i].get('message') ?? 'Notification';
+
+                  return FadeTransition(
+                    opacity: anim,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.15),
+                        end: Offset.zero,
+                      ).animate(anim),
+                      child: _buildNotificationCard(message),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );

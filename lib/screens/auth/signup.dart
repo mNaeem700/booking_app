@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:booking_app/screens/custom_text_field.dart';
-import 'package:booking_app/screens/signin.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:booking_app/screens/widgets/custom_text_field.dart';
+import 'package:booking_app/screens/auth/signin.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
-import '../../../theme/app_colors.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -33,7 +33,6 @@ class _SignupScreenState extends State<SignupScreen>
   void initState() {
     super.initState();
 
-    // Fade-in animation for fields
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -43,7 +42,6 @@ class _SignupScreenState extends State<SignupScreen>
       curve: Curves.easeInOut,
     );
 
-    // Glowing button animation
     _buttonGlowController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -62,10 +60,14 @@ class _SignupScreenState extends State<SignupScreen>
   void dispose() {
     _fadeController.dispose();
     _buttonGlowController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
-  bool isStrongPassword(String password) {
+  bool _isStrongPassword(String password) {
     final hasLetter = password.contains(RegExp(r'[A-Za-z]'));
     final hasNumber = password.contains(RegExp(r'[0-9]'));
     return password.length >= 6 && hasLetter && hasNumber;
@@ -81,26 +83,18 @@ class _SignupScreenState extends State<SignupScreen>
         email.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      _showSnackBar("Please fill all fields");
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+      _showSnackBar("Passwords do not match");
       return;
     }
 
-    if (!isStrongPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Password must be at least 6 characters and contain letters & numbers",
-          ),
-        ),
+    if (!_isStrongPassword(password)) {
+      _showSnackBar(
+        "Password must be at least 6 characters and contain both letters & numbers",
       );
       return;
     }
@@ -108,25 +102,32 @@ class _SignupScreenState extends State<SignupScreen>
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCred = await FirebaseAuth.instance
+      // 🔥 Create user in Firebase Auth
+      final userCred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
-      String uid = userCred.user!.uid;
 
-      await FirebaseFirestore.instance.collection("users").doc(uid).set({
-        "name": name,
-        "email": email,
-        "createdAt": FieldValue.serverTimestamp(),
+      final user = userCred.user;
+      if (user == null) throw FirebaseAuthException(code: 'user-null');
+
+      // 💾 Store user details in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'name': name,
+        'email': email,
+        'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // ✅ Send verification email
+      await user.sendEmailVerification();
 
       setState(() {
         isLoading = false;
         showConfetti = true;
       });
 
-      // 🎉 Play confetti for 2 seconds, then navigate
+      // 🎊 Success animation
       Future.delayed(const Duration(seconds: 2), () {
         setState(() => showConfetti = false);
-
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -137,26 +138,41 @@ class _SignupScreenState extends State<SignupScreen>
         );
       });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Signup successful! 🎉")));
+      _showSnackBar("Signup successful! Please verify your email.");
     } on FirebaseAuthException catch (e) {
       setState(() => isLoading = false);
-      String message = "Something went wrong";
-      if (e.code == 'weak-password') {
-        message = "Password is too weak";
-      } else if (e.code == 'email-already-in-use') {
-        message = "Email already exists";
+      String message;
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = "This email is already registered.";
+          break;
+        case 'invalid-email':
+          message = "Please enter a valid email.";
+          break;
+        case 'weak-password':
+          message = "Your password is too weak.";
+          break;
+        case 'network-request-failed':
+          message = "Check your internet connection.";
+          break;
+        default:
+          message = "Something went wrong. Try again.";
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnackBar(message);
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Unexpected error occurred")),
-      );
+      _showSnackBar("Unexpected error occurred. Please try again.");
     }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black87,
+      ),
+    );
   }
 
   @override
@@ -164,7 +180,7 @@ class _SignupScreenState extends State<SignupScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // 🟣 Animated background gradient
+          // 🌈 Background gradient
           AnimatedContainer(
             duration: const Duration(seconds: 3),
             decoration: const BoxDecoration(
@@ -180,14 +196,14 @@ class _SignupScreenState extends State<SignupScreen>
             ),
           ),
 
-          // 🎉 Confetti animation overlay
+          // 🎉 Confetti animation
           if (showConfetti)
             Center(
               child: Lottie.asset(
                 'assets/animations/confetti.json',
                 repeat: false,
-                width: 300,
-                height: 300,
+                width: 250,
+                height: 250,
               ),
             ),
 
@@ -214,7 +230,7 @@ class _SignupScreenState extends State<SignupScreen>
                     ),
                     const SizedBox(height: 40),
 
-                    // 🔹 Animated text fields
+                    // 🧾 Fields
                     _animatedField(
                       CustomTextField(
                         controller: nameController,
@@ -249,10 +265,9 @@ class _SignupScreenState extends State<SignupScreen>
                       ),
                       3,
                     ),
-
                     const SizedBox(height: 30),
 
-                    // ✨ Glowing animated button
+                    // 🔘 Glowing Sign Up button
                     AnimatedBuilder(
                       animation: _glowAnimation,
                       builder: (context, child) {
@@ -297,10 +312,9 @@ class _SignupScreenState extends State<SignupScreen>
                         );
                       },
                     ),
-
                     const SizedBox(height: 20),
 
-                    // 🔁 Hero transition link
+                    // 🔁 Switch to sign in
                     Hero(
                       tag: "signinButton",
                       child: TextButton(

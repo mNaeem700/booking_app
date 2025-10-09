@@ -1,9 +1,11 @@
-import 'package:booking_app/screens/homeScreen.dart';
-import 'package:booking_app/screens/signup.dart';
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:booking_app/screens/auth/signup.dart';
+import 'package:booking_app/screens/auth/forgot_password_screen.dart';
+import 'package:booking_app/screens/home/homeScreen.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:booking_app/screens/widgets/custom_text_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:booking_app/screens/custom_text_field.dart';
-import '../../../theme/app_colors.dart';
+import 'package:flutter/material.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -45,28 +47,46 @@ class _SigninScreenState extends State<SigninScreen>
       CurvedAnimation(parent: _buttonGlowController, curve: Curves.easeInOut),
     );
 
-    _fadeController.forward();
+    Timer(const Duration(milliseconds: 300), () {
+      _fadeController.forward();
+    });
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
     _buttonGlowController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _signin() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar("Please enter both email and password");
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
+      final userCred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      final user = userCred.user;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Sign in Successful!")));
+      if (user != null && !user.emailVerified) {
+        await FirebaseAuth.instance.signOut();
+        _showSnackBar("Please verify your email before logging in.");
+        setState(() => isLoading = false);
+        return;
+      }
+
+      _showSnackBar("Welcome back! 🎉");
 
       Navigator.pushReplacement(
         context,
@@ -77,22 +97,42 @@ class _SigninScreenState extends State<SigninScreen>
         ),
       );
     } on FirebaseAuthException catch (e) {
-      String message = "Incorrect email or password";
-      if (e.code == 'user-not-found') {
-        message = "No user found with this email";
-      } else if (e.code == 'wrong-password') {
-        message = "Incorrect password";
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = "No user found with this email.";
+          break;
+        case 'wrong-password':
+          message = "Incorrect password.";
+          break;
+        case 'invalid-email':
+          message = "Invalid email format.";
+          break;
+        case 'user-disabled':
+          message = "Account has been disabled.";
+          break;
+        case 'too-many-requests':
+          message = "Too many failed attempts. Try again later.";
+          break;
+        default:
+          message = "Something went wrong. Please try again.";
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnackBar(message);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Unexpected error")));
+      _showSnackBar("Unexpected error occurred. Please try again.");
     }
 
     setState(() => isLoading = false);
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black87,
+      ),
+    );
   }
 
   @override
@@ -100,7 +140,7 @@ class _SigninScreenState extends State<SigninScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Animated background gradient
+          // 🌈 Animated Gradient Background
           AnimatedContainer(
             duration: const Duration(seconds: 3),
             decoration: const BoxDecoration(
@@ -116,28 +156,39 @@ class _SigninScreenState extends State<SigninScreen>
             ),
           ),
 
+          // ✨ Content
           FadeTransition(
             opacity: _fadeAnimation,
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 20,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Hero(
                       tag: "signinTitle",
                       child: Text(
-                        "Welcome Back",
+                        "Welcome Back 👋",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 34,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Sign in to continue booking your favorite salons!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
                     const SizedBox(height: 40),
 
+                    // ✏️ Email Field
                     CustomTextField(
                       controller: emailController,
                       hintText: "Email",
@@ -145,13 +196,39 @@ class _SigninScreenState extends State<SigninScreen>
                     ),
                     const SizedBox(height: 16),
 
+                    // 🔒 Password Field
                     CustomTextField(
                       controller: passwordController,
                       hintText: "Password",
                       isPassword: true,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 10),
 
+                    // 🔗 Forgot Password
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 💫 Glowing Animated Sign-In Button
                     AnimatedBuilder(
                       animation: _glowAnimation,
                       builder: (context, child) {
@@ -189,14 +266,16 @@ class _SigninScreenState extends State<SigninScreen>
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.white,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                         );
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
 
+                    // 🔁 Navigate to Sign Up
                     Hero(
                       tag: "switchToSignup",
                       child: TextButton(
@@ -216,7 +295,7 @@ class _SigninScreenState extends State<SigninScreen>
                         },
                         child: const Text(
                           "Don’t have an account? Sign up",
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white70, fontSize: 15),
                         ),
                       ),
                     ),

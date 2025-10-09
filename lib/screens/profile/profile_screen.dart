@@ -1,15 +1,11 @@
-import 'package:booking_app/screens/Help_Center_Screen.dart'
-    hide HelpCenterScreen;
-import 'package:booking_app/screens/Wallet_Screen.dart';
-import 'package:booking_app/screens/animated_background.dart';
+import 'package:booking_app/screens/auth/Change_Password_Screen.dart';
+import 'package:booking_app/screens/profile/Edit_Profile_Screen.dart';
+import 'package:booking_app/screens/profile/Help_Center_Screen.dart';
+import 'package:booking_app/screens/home/Wallet_Screen.dart';
+import 'package:booking_app/screens/widgets/animated_background.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:booking_app/theme/app_colors.dart';
-
-// Import other screens for navigation
-import 'package:booking_app/screens/edit_profile_screen.dart';
-import 'package:booking_app/screens/change_password_screen.dart';
-import 'package:booking_app/screens/help_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

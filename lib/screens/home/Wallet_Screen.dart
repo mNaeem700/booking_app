@@ -1,6 +1,8 @@
+import 'package:booking_app/screens/widgets/animated_background.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:booking_app/screens/animated_background.dart';
-import 'package:booking_app/theme/app_colors.dart';
 import 'dart:math' as math;
 
 class WalletScreen extends StatefulWidget {
@@ -15,21 +17,10 @@ class _WalletScreenState extends State<WalletScreen>
   late AnimationController _controller;
   late Animation<double> _animation;
 
-  double _balance = 2450.75;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  final List<Map<String, dynamic>> _transactions = [
-    {
-      'title': 'Salon Booking - Glam Studio',
-      'date': 'Oct 5, 2025',
-      'amount': -1200.0,
-    },
-    {'title': 'Wallet Top-Up', 'date': 'Sep 28, 2025', 'amount': 2000.0},
-    {
-      'title': 'Salon Booking - Style Hub',
-      'date': 'Sep 10, 2025',
-      'amount': -350.0,
-    },
-  ];
+  double _balance = 0.0;
 
   @override
   void initState() {
@@ -40,6 +31,8 @@ class _WalletScreenState extends State<WalletScreen>
     )..repeat(reverse: true);
 
     _animation = Tween<double>(begin: 0, end: 2 * math.pi).animate(_controller);
+
+    _fetchBalance();
   }
 
   @override
@@ -48,6 +41,43 @@ class _WalletScreenState extends State<WalletScreen>
     super.dispose();
   }
 
+  /// Fetch wallet balance from Firestore
+  Future<void> _fetchBalance() async {
+    final uid = _auth.currentUser!.uid;
+    final doc = await _db.collection('wallets').doc(uid).get();
+    if (doc.exists && mounted) {
+      setState(() {
+        _balance = (doc.data()?['balance'] ?? 0.0).toDouble();
+      });
+    } else if (!doc.exists) {
+      // Create wallet doc if not exists
+      await _db.collection('wallets').doc(uid).set({'balance': 0.0});
+    }
+  }
+
+  /// Top-Up Wallet Function
+  Future<void> _topUpWallet(double amount) async {
+    final uid = _auth.currentUser!.uid;
+    final walletRef = _db.collection('wallets').doc(uid);
+    final txRef = _db.collection('transactions').doc();
+
+    await _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(walletRef);
+      final currentBalance = snapshot.exists ? snapshot.get('balance') : 0.0;
+
+      transaction.set(walletRef, {'balance': currentBalance + amount});
+      transaction.set(txRef, {
+        'userId': uid,
+        'title': 'Wallet Top-Up',
+        'amount': amount,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    });
+
+    _fetchBalance();
+  }
+
+  /// Show dialog to enter top-up amount
   void _showTopUpDialog() {
     final TextEditingController amountController = TextEditingController();
 
@@ -74,18 +104,12 @@ class _WalletScreenState extends State<WalletScreen>
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final double? amount = double.tryParse(amountController.text);
               if (amount != null && amount > 0) {
-                setState(() {
-                  _balance += amount;
-                  _transactions.insert(0, {
-                    'title': 'Wallet Top-Up',
-                    'date': 'Today',
-                    'amount': amount,
-                  });
-                });
+                await _topUpWallet(amount);
                 Navigator.pop(context);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -111,6 +135,8 @@ class _WalletScreenState extends State<WalletScreen>
 
   @override
   Widget build(BuildContext context) {
+    final uid = _auth.currentUser!.uid;
+
     return AnimatedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -126,7 +152,7 @@ class _WalletScreenState extends State<WalletScreen>
             children: [
               const SizedBox(height: 20),
 
-              // 💫 Animated Wallet Card
+              /// 💫 Animated Wallet Card
               AnimatedBuilder(
                 animation: _animation,
                 builder: (context, child) {
@@ -198,7 +224,7 @@ class _WalletScreenState extends State<WalletScreen>
 
               const SizedBox(height: 25),
 
-              // 🔹 Top Up Button
+              /// 🔹 Top Up Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -228,7 +254,7 @@ class _WalletScreenState extends State<WalletScreen>
 
               const SizedBox(height: 25),
 
-              // 🔹 Transaction History Header
+              /// 🔹 Transaction History Header
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -242,82 +268,115 @@ class _WalletScreenState extends State<WalletScreen>
               ),
               const SizedBox(height: 10),
 
-              // 🔹 Transaction List
+              /// 🔹 Transaction List
               Expanded(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _transactions.length,
-                  itemBuilder: (context, index) {
-                    final tx = _transactions[index];
-                    final isCredit = tx['amount'] > 0;
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _db
+                      .collection('transactions')
+                      .where('userId', isEqualTo: uid)
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    }
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "No transactions yet",
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            height: 42,
-                            width: 42,
-                            decoration: BoxDecoration(
-                              color: isCredit
-                                  ? Colors.green.withOpacity(0.2)
-                                  : Colors.red.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isCredit
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_upward,
-                              color: isCredit ? Colors.green : Colors.red,
+                      );
+                    }
+
+                    final transactions = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: transactions.length,
+                      itemBuilder: (context, index) {
+                        final tx = transactions[index];
+                        final double amount = (tx.get('amount') ?? 0.0)
+                            .toDouble();
+                        final bool isCredit = amount > 0;
+                        final title = tx.get('title') ?? '';
+                        final timestamp = tx.get('timestamp') as Timestamp?;
+                        final date = timestamp != null
+                            ? "${timestamp.toDate().day}-${timestamp.toDate().month}-${timestamp.toDate().year}"
+                            : '';
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tx['title'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
+                          child: Row(
+                            children: [
+                              Container(
+                                height: 42,
+                                width: 42,
+                                decoration: BoxDecoration(
+                                  color: isCredit
+                                      ? Colors.green.withOpacity(0.2)
+                                      : Colors.red.withOpacity(0.2),
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  tx['date'],
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                  ),
+                                child: Icon(
+                                  isCredit
+                                      ? Icons.arrow_downward
+                                      : Icons.arrow_upward,
+                                  color: isCredit ? Colors.green : Colors.red,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      date,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                "${isCredit ? '+' : '-'} Rs. ${amount.abs().toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  color: isCredit
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            "${isCredit ? '+' : '-'} Rs. ${tx['amount'].abs().toStringAsFixed(2)}",
-                            style: TextStyle(
-                              color: isCredit
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 ),

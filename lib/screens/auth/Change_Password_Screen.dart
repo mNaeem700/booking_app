@@ -1,6 +1,7 @@
+import 'package:booking_app/screens/widgets/animated_background.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:booking_app/screens/animated_background.dart';
-import 'package:booking_app/theme/app_colors.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -19,6 +20,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   bool _showCurrent = false;
   bool _showNew = false;
   bool _showConfirm = false;
+  bool _isLoading = false;
 
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
@@ -49,20 +51,71 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      FocusScope.of(context).unfocus();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password changed successfully ✅"),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
+  Future<void> _changePassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.email == null) {
+        _showSnackBar("No user is currently logged in.");
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: _currentPassController.text.trim(),
       );
+
+      // Reauthenticate before changing password
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(_newPassController.text.trim());
+
+      _showSnackBar("✅ Password updated successfully");
+
+      // Clear form fields
+      _formKey.currentState!.reset();
       _currentPassController.clear();
       _newPassController.clear();
       _confirmPassController.clear();
+
+      // Wait a second then navigate back
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'wrong-password':
+          message = "❌ Current password is incorrect";
+          break;
+        case 'weak-password':
+          message = "⚠️ New password is too weak (min 6 characters)";
+          break;
+        case 'requires-recent-login':
+          message = "⏳ Please log in again to change your password";
+          break;
+        default:
+          message = "An unexpected error occurred (${e.message})";
+      }
+      _showSnackBar(message);
+    } catch (e) {
+      _showSnackBar("Unexpected error occurred. Please try again.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black87,
+      ),
+    );
   }
 
   @override
@@ -117,26 +170,32 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                       },
                     ),
                     const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 6,
-                        shadowColor: AppColors.primary.withOpacity(0.4),
-                      ),
-                      child: const Text(
-                        "Update Password",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: _changePassword,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 6,
+                              shadowColor: AppColors.primary.withOpacity(0.4),
+                            ),
+                            child: const Text(
+                              "Update Password",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),

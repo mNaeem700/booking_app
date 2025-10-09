@@ -1,9 +1,10 @@
+import 'package:booking_app/screens/booking/booking_screen.dart';
+import 'package:booking_app/screens/booking/my_bookings_screen.dart';
+import 'package:booking_app/screens/profile/favorites_screen.dart';
+import 'package:booking_app/screens/profile/profile_screen.dart';
+import 'package:booking_app/screens/widgets/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:booking_app/theme/app_colors.dart';
-import 'salon_detail_screen.dart';
-import 'my_bookings_screen.dart';
-import 'favorites_screen.dart';
-import 'profile_screen.dart';
 import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _bgController;
   late AnimationController _fadeController;
   late List<AnimationController> _tabControllers;
-
   late List<Widget> _screens;
 
   @override
@@ -46,11 +46,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
 
-    for (final controller in _tabControllers) {
-      controller.value = 1.0;
-    }
+    for (final controller in _tabControllers) controller.value = 1.0;
 
-    // ✅ Pass the callback to activate Profile tab
     _screens = [
       _HomeContent(onProfileTap: () => _onItemTapped(3)),
       const MyBookingsScreen(),
@@ -63,9 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _bgController.dispose();
     _fadeController.dispose();
-    for (final c in _tabControllers) {
-      c.dispose();
-    }
+    for (final c in _tabControllers) c.dispose();
     super.dispose();
   }
 
@@ -135,21 +130,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           selectedItemColor: AppColors.primary,
           unselectedItemColor: Colors.grey,
           elevation: 10,
-          items: List.generate(4, (i) {
-            final items = [
-              {"icon": Icons.home, "label": "Home"},
-              {"icon": Icons.calendar_today, "label": "Bookings"},
-              {"icon": Icons.favorite, "label": "Favorites"},
-              {"icon": Icons.person, "label": "Profile"},
-            ];
-            return BottomNavigationBarItem(
+          items: [
+            BottomNavigationBarItem(
               icon: ScaleTransition(
-                scale: _tabControllers[i],
-                child: Icon(items[i]["icon"] as IconData),
+                scale: _tabControllers[0],
+                child: const Icon(Icons.home),
               ),
-              label: items[i]["label"] as String,
-            );
-          }),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: ScaleTransition(
+                scale: _tabControllers[1],
+                child: const Icon(Icons.calendar_today),
+              ),
+              label: "Bookings",
+            ),
+            BottomNavigationBarItem(
+              icon: ScaleTransition(
+                scale: _tabControllers[2],
+                child: const Icon(Icons.favorite),
+              ),
+              label: "Favorites",
+            ),
+            BottomNavigationBarItem(
+              icon: ScaleTransition(
+                scale: _tabControllers[3],
+                child: const Icon(Icons.person),
+              ),
+              label: "Profile",
+            ),
+          ],
         ),
       ),
     );
@@ -157,8 +167,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 class _HomeContent extends StatefulWidget {
-  final VoidCallback?
-  onProfileTap; // ✅ nullable callback to prevent null errors
+  final VoidCallback? onProfileTap;
 
   const _HomeContent({this.onProfileTap, super.key});
 
@@ -169,50 +178,10 @@ class _HomeContent extends StatefulWidget {
 class _HomeContentState extends State<_HomeContent>
     with TickerProviderStateMixin {
   late final AnimationController _entryController;
-  final ValueNotifier<int?> _pressedIndex = ValueNotifier<int?>(null);
-
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = "All";
   bool _showDiscountOnly = false;
-
-  final List<Map<String, dynamic>> _salons = [
-    {
-      "name": "Luxury Cuts Salon",
-      "rating": "4.8",
-      "distance": "1.2 km",
-      "image": "assets/images/salon1.jpg",
-      "location": "Gulberg, Lahore",
-      "category": "Men",
-      "isDiscounted": true,
-    },
-    {
-      "name": "Bella Beauty Lounge",
-      "rating": "4.9",
-      "distance": "2.3 km",
-      "image": "assets/images/salon2.png",
-      "location": "DHA, Lahore",
-      "category": "Women",
-      "isDiscounted": false,
-    },
-    {
-      "name": "The Barber Spot",
-      "rating": "4.7",
-      "distance": "1.8 km",
-      "image": "assets/images/salon3.png",
-      "location": "Model Town, Lahore",
-      "category": "Men",
-      "isDiscounted": true,
-    },
-    {
-      "name": "Lotus Spa & Wellness",
-      "rating": "4.6",
-      "distance": "3.0 km",
-      "image": "assets/images/salon4.jpg",
-      "location": "Johar Town, Lahore",
-      "category": "Spa",
-      "isDiscounted": false,
-    },
-  ];
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -234,17 +203,6 @@ class _HomeContentState extends State<_HomeContent>
 
   @override
   Widget build(BuildContext context) {
-    final filteredSalons = _salons.where((salon) {
-      final matchesSearch = salon["name"].toString().toLowerCase().contains(
-        _searchController.text.toLowerCase(),
-      );
-      final matchesCategory =
-          _selectedCategory == "All" || salon["category"] == _selectedCategory;
-      final matchesDiscount =
-          !_showDiscountOnly || salon["isDiscounted"] == true;
-      return matchesSearch && matchesCategory && matchesDiscount;
-    }).toList();
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -267,15 +225,13 @@ class _HomeContentState extends State<_HomeContent>
               Icons.notifications_none_rounded,
               color: Colors.white,
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
           ),
           GestureDetector(
-            onTap: widget.onProfileTap ?? () {}, // ✅ Safe call — no null crash
+            onTap: widget.onProfileTap ?? () {},
             child: const Padding(
               padding: EdgeInsets.only(right: 12),
               child: CircleAvatar(
@@ -324,14 +280,55 @@ class _HomeContentState extends State<_HomeContent>
             const SizedBox(height: 10),
             _animatedItem(
               5,
-              filteredSalons.isEmpty
-                  ? const Center(
+              StreamBuilder<QuerySnapshot>(
+                stream: _db.collection('salons').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
                       child: Text(
                         "No salons found",
                         style: TextStyle(color: Colors.white70),
                       ),
-                    )
-                  : _buildSalonList(context, filteredSalons),
+                    );
+                  }
+
+                  final salons = snapshot.data!.docs
+                      .map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        data['id'] = doc.id;
+                        return data;
+                      })
+                      .where((salon) {
+                        final matchesSearch = salon['name']
+                            .toString()
+                            .toLowerCase()
+                            .contains(_searchController.text.toLowerCase());
+                        final matchesCategory =
+                            _selectedCategory == "All" ||
+                            salon['category'] == _selectedCategory;
+                        final matchesDiscount =
+                            !_showDiscountOnly || salon['isDiscounted'] == true;
+                        return matchesSearch &&
+                            matchesCategory &&
+                            matchesDiscount;
+                      })
+                      .toList();
+
+                  if (salons.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No salons found",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    );
+                  }
+
+                  return _buildSalonList(context, salons);
+                },
+              ),
             ),
             const SizedBox(height: 30),
           ],
@@ -386,7 +383,6 @@ class _HomeContentState extends State<_HomeContent>
 
   Widget _buildCategoryRow() {
     final categories = ["All", "Men", "Women", "Spa", "Massage"];
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -458,138 +454,119 @@ class _HomeContentState extends State<_HomeContent>
     return Column(
       children: List.generate(salons.length, (i) {
         final salon = salons[i];
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SalonDetailScreen(
-                  salonName: salon["name"]!,
-                  salonImage: salon["image"]!,
-                  salonLocation: salon["location"]!,
-                ),
+        final services = List<Map<String, dynamic>>.from(
+          salon['services'] ?? [],
+        );
+        final rating = (salon['rating'] ?? 4.5).toDouble();
+        final location = salon['location'] ?? "No location";
+        final salonName = salon['name'] ?? '';
+        final salonImage = salon['image'] ?? 'assets/images/default_salon.jpg';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                  child: Image.asset(
-                    salon["image"]!,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                // name + rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      salonName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Row(
                       children: [
-                        Text(
-                          salon["name"]!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              salon["rating"]!,
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.location_on,
-                              size: 18,
-                              color: Colors.grey,
-                            ),
-                            Text(
-                              salon["distance"]!,
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ValueListenableBuilder<int?>(
-                          valueListenable: _pressedIndex,
-                          builder: (context, pressedIndex, _) {
-                            final isPressed = pressedIndex == i;
-                            return AnimatedScale(
-                              scale: isPressed ? 1.08 : 1.0,
-                              duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeOut,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  _pressedIndex.value = i;
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 180),
-                                  );
-                                  _pressedIndex.value = null;
-                                  if (!mounted) return;
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SalonDetailScreen(
-                                        salonName: salon["name"]!,
-                                        salonImage: salon["image"]!,
-                                        salonLocation: salon["location"]!,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Book Now",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text(rating.toStringAsFixed(1)),
                       ],
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // location
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: const TextStyle(color: Colors.grey),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  children: services.isEmpty
+                      ? [
+                          const Text(
+                            "No services available",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ]
+                      : services.map((service) {
+                          final serviceName = service['name'] ?? 'Service';
+                          final servicePrice = service['price'] ?? 0;
+                          return ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BookingScreen(
+                                    salonId: salon['id']!,
+                                    serviceName: serviceName,
+                                    servicePrice: servicePrice.toDouble(),
+                                    salonName: salonName,
+                                    salonImage: salonImage,
+                                    salonRating: rating,
+                                    price: null,
+                                    imagePath: null,
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: Text(
+                              "$serviceName - Rs $servicePrice",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                 ),
               ],
             ),
